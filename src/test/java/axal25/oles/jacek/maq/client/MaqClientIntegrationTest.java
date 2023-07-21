@@ -4,7 +4,6 @@ import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBodyDataElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyErrorsElement;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,11 +15,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.util.stream.Collectors.toList;
 
 @SpringBootTest
-public class MaqClientOmniSerializerIntegrationTest {
+public class MaqClientIntegrationTest {
     @Autowired
-    private MaqClientOmniSerializer maqClientOmniSerializer;
+    private MaqClient maqClient;
     @Autowired
-    private ObjectMapper objectMapper;
+    private MaqOmniSerializer maqOmniSerializer;
 
     @Test
     void postSentiment_successful_200() {
@@ -40,7 +39,7 @@ public class MaqClientOmniSerializerIntegrationTest {
                                 .build()))
                 .build();
 
-        MaqSentimentResponse maqSentimentResponse = maqClientOmniSerializer.postSentiment(maqSentimentRequestBody);
+        MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(200);
         assertThat(maqSentimentResponse.getSuccessBody()).isNotNull();
@@ -63,9 +62,7 @@ public class MaqClientOmniSerializerIntegrationTest {
                                 .text("test")
                                 .build()))
                 .build();
-        MaqClientOmniSerializer maqClient = new MaqClientOmniSerializer(
-                objectMapper,
-                new MaqClient("bad maq api key value"));
+        MaqClient maqClient = new MaqClient("bad maq api key value", maqOmniSerializer);
 
         MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
 
@@ -84,7 +81,7 @@ public class MaqClientOmniSerializerIntegrationTest {
     void postSentiment_emptyBody_400() {
         MaqSentimentRequestBody maqSentimentRequestBody = MaqSentimentRequestBody.builder().build();
 
-        MaqSentimentResponse maqSentimentResponse = maqClientOmniSerializer.postSentiment(maqSentimentRequestBody);
+        MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(400);
         assertThat(maqSentimentResponse.getSuccessBody()).isNull();
@@ -104,7 +101,7 @@ public class MaqClientOmniSerializerIntegrationTest {
                                 .build()))
                 .build();
 
-        MaqSentimentResponse maqSentimentResponse = maqClientOmniSerializer.postSentiment(maqSentimentRequestBody);
+        MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(400);
         assertThat(maqSentimentResponse.getSuccessBody()).isNull();

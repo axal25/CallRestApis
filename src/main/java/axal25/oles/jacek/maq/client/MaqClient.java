@@ -1,5 +1,8 @@
 package axal25.oles.jacek.maq.client;
 
+import axal25.oles.jacek.http.HttpContainer;
+import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
+import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
 import axal25.oles.jacek.util.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,30 +23,44 @@ import static org.slf4j.MarkerFactory.getMarker;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Component
-public class MaqClient implements IMaqClient {
+public class MaqClient {
     @VisibleForTesting
     static final URI URI_SENTIMENT = URI.create(SENTIMENT);
     private static final Logger logger = LoggerFactory.getLogger(MaqClient.class);
     private final String maqKeyValue;
+    private final MaqOmniSerializer maqOmniSerializer;
 
     @Autowired
-    public MaqClient(@Value("${secrets.maq_api_key_value}") String maqKeyValue) {
+    public MaqClient(
+            @Value("${secrets.maq_api_key_value}") String maqKeyValue,
+            MaqOmniSerializer maqOmniSerializer) {
         this.maqKeyValue = maqKeyValue;
+        this.maqOmniSerializer = maqOmniSerializer;
     }
 
-    @Override
-    public HttpResponse<String> postSentiment(String maqRequestBodyJson) throws MaqUnhandledException {
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(URI_SENTIMENT)
-                .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                .header(MAQ_API_KEY_NAME, maqKeyValue)
-                .POST(HttpRequest.BodyPublishers.ofString(maqRequestBodyJson))
-                .build();
+    public MaqSentimentResponse postSentiment(MaqSentimentRequestBody maqSentimentRequestBody) {
+        return maqOmniSerializer.deserializeFromJson(
+                postSentiment(
+                        maqOmniSerializer.serializeToJson(maqSentimentRequestBody)));
+    }
 
-        HttpClient httpClient = getHttpClient();
+    public HttpContainer<String> postSentiment(String maqRequestBodyJson) {
+        HttpContainer.HttpContainerBuilder<String> containerBuilder =
+                HttpContainer.<String>builder()
+                        .client(getHttpClient())
+                        .request(HttpRequest.newBuilder()
+                                .uri(URI_SENTIMENT)
+                                .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                                .header(MAQ_API_KEY_NAME, maqKeyValue)
+                                .POST(HttpRequest.BodyPublishers.ofString(maqRequestBodyJson))
+                                .build());
         try {
-            return httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            containerBuilder.response(
+                    containerBuilder.getClient().send(
+                            containerBuilder.getRequest(),
+                            HttpResponse.BodyHandlers.ofString()));
         } catch (IOException | InterruptedException e) {
+            containerBuilder.throwable(e);
             String msgFormat = "Exception during "
                     + HttpClient.class.getSimpleName()
                     + "'s "
@@ -52,12 +69,19 @@ public class MaqClient implements IMaqClient {
                     + HttpClient.class.getSimpleName() + ": \r\n%s\r\n"
                     + HttpRequest.class.getSimpleName() + ": \r\n%s\r\n"
                     + HttpRequest.class.getSimpleName() + "'s Body: \r\n%s";
+            containerBuilder.causeMessage(String.format(msgFormat,
+                    containerBuilder.getClient(),
+                    containerBuilder.getRequest(),
+                    maqRequestBodyJson));
             logger.error(getMarker("checked exception"),
-                    String.format(msgFormat, "{}", "{}", "{}"), httpClient, httpRequest, maqRequestBodyJson,
+                    String.format(msgFormat, "{}", "{}", "{}"),
+                    containerBuilder.getClient(),
+                    containerBuilder.getRequest(),
+                    maqRequestBodyJson,
                     e);
-
-            throw new MaqUnhandledException(String.format(msgFormat, httpClient, httpRequest, maqRequestBodyJson), e);
         }
+
+        return containerBuilder.build();
     }
 
     @VisibleForTesting

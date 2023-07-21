@@ -3,6 +3,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+secrets/**
+
 ### IntelliJ IDEA ###
 .idea
 .idea/modules.xml
@@ -37,5 +39,3 @@ build/
 
 ### Mac OS ###
 .DS_Store
-
-secrets/**
