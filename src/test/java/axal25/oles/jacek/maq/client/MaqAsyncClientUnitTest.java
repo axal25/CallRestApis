@@ -39,14 +39,6 @@ public class MaqAsyncClientUnitTest {
     private MaqAsyncClient maqAsyncClientMock;
     private HttpClient httpClientMock;
 
-    private String objectMapperWriteValueAsStringUnchecked(MaqSentimentRequestBody maqSentimentRequestBody) {
-        try {
-            return objectMapper.writeValueAsString(maqSentimentRequestBody);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeEach
     void setUp() {
         logger.addAppender(listAppender);
