@@ -26,91 +26,90 @@ public class MaqOmniSerializer {
         this.objectMapper = objectMapper;
     }
 
-    public String serializeToJson(MaqSentimentRequestBody maqSentimentRequestBody) {
-        try {
-            return objectMapper.writeValueAsString(maqSentimentRequestBody);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+    public String serializeToJson(MaqSentimentRequestBody maqSentimentRequestBody) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(maqSentimentRequestBody);
     }
 
     public MaqSentimentResponse deserializeFromJson(HttpContainer<String> httpContainer) {
-        if(httpContainer.getResponse() == null) {
-            return getErrorBodyFromThrowableOrCauseMessage(httpContainer);
+        if (httpContainer.getResponse() == null) {
+            if (httpContainer.getThrowable() == null && Strings.isBlank(httpContainer.getCauseMessage())) {
+                throw new IllegalStateException("Cause Message and "
+                        + Throwable.class.getSimpleName() +
+                        " cannot be null or blank at the same time.\r\n" +
+                        Throwable.class.getSimpleName() + ": " + httpContainer.getThrowable() + ", " +
+                        "Cause Message: " + httpContainer.getCauseMessage() + ".");
+            }
+
+            String message = Strings.isBlank(httpContainer.getCauseMessage())
+                    ? httpContainer.getThrowable().toString()
+                    : httpContainer.getCauseMessage();
+
+            return MaqSentimentResponse.builder()
+                    .errorBody(MaqSentimentResponseErrorBody.builder()
+                            .statusCode(500)
+                            .message(message)
+                            .build())
+                    .build();
         }
 
-        return MaqSentimentResponse.builder()
-                .underlyingResponse(httpContainer.getResponse())
-                .successBody(deserializeFromJsonSuccessBody(httpContainer.getResponse()))
-                .errorBody(deSerializeFromJsonErrorBody(httpContainer.getResponse()))
-                .build();
+        return deserializeResponseFromJson(httpContainer.getResponse());
     }
 
-    private MaqSentimentResponse getErrorBodyFromThrowableOrCauseMessage(HttpContainer<String> httpContainer) {
-        if(httpContainer.getResponse() != null) {
-            throw new IllegalStateException(HttpResponse.class.getSimpleName() + " must be null.");
-        }
-
-        if(httpContainer.getThrowable() == null || Strings.isBlank(httpContainer.getCauseMessage())) {
-            throw new IllegalStateException("Cause Message and "
-                    + Throwable.class.getSimpleName() +
-                    " both at the same time cannot be null.");
-        }
-
-        String message = Strings.isBlank(httpContainer.getCauseMessage())
-                ? httpContainer.getThrowable().toString()
-                : httpContainer.getCauseMessage();
-
-        return MaqSentimentResponse.builder()
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(500)
-                        .message(message)
-                        .build())
-                .build();
-    }
-
-    private List<MaqSentimentResponseSuccessBodyElement> deserializeFromJsonSuccessBody(HttpResponse<String> httpResponse) {
-        if (httpResponse.statusCode() != 200) {
-            return null;
-        }
-
-        try {
-            return objectMapper.readValue(
-                    httpResponse.body(),
-                    objectMapper.getTypeFactory().constructCollectionType(
-                            List.class,
-                            MaqSentimentResponseSuccessBodyElement.class));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private MaqSentimentResponseErrorBody deSerializeFromJsonErrorBody(HttpResponse<String> httpResponse) {
+    private MaqSentimentResponse deserializeResponseFromJson(HttpResponse<String> httpResponse) {
+        List<MaqSentimentResponseSuccessBodyElement> maqSentimentResponseSuccessBodyElements = null;
+        MaqSentimentResponseErrorBody maqSentimentResponseErrorBody = null;
         if (httpResponse.statusCode() == 200) {
-            return null;
+            try {
+                maqSentimentResponseSuccessBodyElements = objectMapper.readValue(
+                        httpResponse.body(),
+                        objectMapper.getTypeFactory().constructCollectionType(
+                                List.class,
+                                MaqSentimentResponseSuccessBodyElement.class));
+            } catch (JsonProcessingException e) {
+                String msgFormat = "Couldn't deserialize "
+                        + List.class.getSimpleName()
+                        + "<"
+                        + MaqSentimentResponseSuccessBodyElement.class
+                        + "> from "
+                        + HttpResponse.class.getSimpleName()
+                        + "'s Body:\r\n" +
+                        "%s";
+                logger.error(String.format(msgFormat, "{}"), httpResponse, e);
+                maqSentimentResponseErrorBody = MaqSentimentResponseErrorBody.builder()
+                        .statusCode(httpResponse.statusCode())
+                        .message(String.format(msgFormat, httpResponse.body()))
+                        .build();
+            }
+        }
+        if (maqSentimentResponseErrorBody == null && httpResponse.statusCode() != 200) {
+            if (!httpResponse.body().matches("^\\{[.\\s\\S]*\\}$")) {
+                maqSentimentResponseErrorBody = MaqSentimentResponseErrorBody.builder()
+                        .statusCode(httpResponse.statusCode())
+                        .message(httpResponse.body())
+                        .build();
+            } else {
+                try {
+                    maqSentimentResponseErrorBody = objectMapper.readValue(httpResponse.body(), MaqSentimentResponseErrorBody.class);
+                } catch (JsonProcessingException e) {
+                    String msgFormat = "Couldn't deserialize "
+                            + MaqSentimentResponseErrorBody.class.getSimpleName()
+                            + " from "
+                            + HttpResponse.class.getSimpleName()
+                            + "'s Body:\r\n"
+                            + "%s";
+                    logger.error(String.format(msgFormat, "{}"), httpResponse.body(), e);
+                    maqSentimentResponseErrorBody = MaqSentimentResponseErrorBody.builder()
+                            .statusCode(httpResponse.statusCode())
+                            .message(String.format(msgFormat, httpResponse.body()))
+                            .build();
+                }
+            }
         }
 
-        if (!httpResponse.body().matches("^\\{[.\\s\\S]*\\}$")) {
-            return getErrorBodyFromUnDeSerializable(httpResponse);
-        }
-
-        try {
-            return objectMapper.readValue(httpResponse.body(), MaqSentimentResponseErrorBody.class);
-        } catch (JsonProcessingException e) {
-            String msgFormat = "Couldn't deserialize "
-                    + MaqSentimentResponseErrorBody.class.getSimpleName()
-                    + " from "
-                    + HttpResponse.class.getSimpleName()
-                    + "'s Body: \r\n {}";
-            logger.error(msgFormat, httpResponse.body(), e);
-            return getErrorBodyFromUnDeSerializable(httpResponse);
-        }
-    }
-
-    private MaqSentimentResponseErrorBody getErrorBodyFromUnDeSerializable(HttpResponse<String> httpResponse) {
-        return MaqSentimentResponseErrorBody.builder()
-                .statusCode(httpResponse.statusCode())
-                .message(httpResponse.body())
+        return MaqSentimentResponse.builder()
+                .underlyingResponse(httpResponse)
+                .successBody(maqSentimentResponseSuccessBodyElements)
+                .errorBody(maqSentimentResponseErrorBody)
                 .build();
     }
 }

@@ -17,9 +17,11 @@ import static java.util.stream.Collectors.toList;
 @SpringBootTest
 public class MaqClientIntegrationTest {
     @Autowired
-    private MaqClient maqClient;
+    private MaqClientCommons maqClientCommons;
     @Autowired
     private MaqOmniSerializer maqOmniSerializer;
+    @Autowired
+    private MaqClient maqClient;
 
     @Test
     void postSentiment_successful_200() {
@@ -62,7 +64,8 @@ public class MaqClientIntegrationTest {
                                 .text("test")
                                 .build()))
                 .build();
-        MaqClient maqClient = new MaqClient("bad maq api key value", maqOmniSerializer);
+        MaqClientCommons maqClientCommons = new MaqClientCommons("bad maq api key value");
+        MaqClient maqClient = new MaqClient(maqClientCommons, maqOmniSerializer);
 
         MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
 

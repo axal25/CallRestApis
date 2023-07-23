@@ -9,32 +9,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.getUnchecked;
 import static java.util.stream.Collectors.toList;
 
 @SpringBootTest
 public class MaqAsyncClientIntegrationTest {
     @Autowired
-    private MaqAsyncClient maqAsyncClient;
+    private MaqClientCommons maqClientCommons;
     @Autowired
     private MaqOmniSerializer maqOmniSerializer;
-
-    private static MaqSentimentResponse getUnchecked(CompletableFuture<MaqSentimentResponse> maqSentimentResponseCf) {
-        MaqSentimentResponse maqSentimentResponse;
-        try {
-            maqSentimentResponse = maqSentimentResponseCf.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-        return maqSentimentResponse;
-    }
+    @Autowired
+    private MaqAsyncClient maqAsyncClient;
 
     @Test
     void postSentiment_successful_200() {
@@ -78,7 +66,8 @@ public class MaqAsyncClientIntegrationTest {
                                 .text("test")
                                 .build()))
                 .build();
-        MaqAsyncClient maqAsyncClient = new MaqAsyncClient("bad maq api key value", maqOmniSerializer);
+        MaqClientCommons maqClientCommons = new MaqClientCommons("bad maq api key value");
+        MaqAsyncClient maqAsyncClient = new MaqAsyncClient(maqClientCommons, maqOmniSerializer);
 
         MaqSentimentResponse maqSentimentResponse =
                 getUnchecked(maqAsyncClient.postSentiment(maqSentimentRequestBody));
