@@ -10,6 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class MaqSentimentRequestBody {
     private List<MaqSentimentRequestBodyDataElement> data;
 }

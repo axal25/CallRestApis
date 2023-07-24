@@ -11,6 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class MaqSentimentResponse {
     private List<MaqSentimentResponseSuccessBodyElement> successBody;
     private MaqSentimentResponseErrorBody errorBody;

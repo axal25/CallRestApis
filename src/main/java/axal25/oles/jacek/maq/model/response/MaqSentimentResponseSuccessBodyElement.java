@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class MaqSentimentResponseSuccessBodyElement {
     private String id;
     private BigDecimal sentiment;

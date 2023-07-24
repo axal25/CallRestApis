@@ -8,6 +8,7 @@ import lombok.*;
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class MaqSentimentRequestBodyDataElement {
     private String id;
     private String text;

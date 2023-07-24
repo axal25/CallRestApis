@@ -12,6 +12,7 @@ import java.net.http.HttpResponse;
 @Getter
 @Setter
 @EqualsAndHashCode
+@ToString
 public class HttpContainer<T> {
     private HttpClient client;
     private HttpRequest request;
