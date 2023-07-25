@@ -19,8 +19,6 @@ import static java.util.stream.Collectors.toList;
 @SpringBootTest
 public class MaqAsyncClientIntegrationTest {
     @Autowired
-    private MaqClientCommons maqClientCommons;
-    @Autowired
     private MaqOmniSerializer maqOmniSerializer;
     @Autowired
     private MaqAsyncClient maqAsyncClient;

@@ -1,5 +1,6 @@
 package axal25.oles.jacek.maq.client;
 
+import axal25.oles.jacek.http.HttpContainer;
 import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBodyDataElement;
@@ -18,14 +19,69 @@ import static java.util.stream.Collectors.toList;
 @SpringBootTest
 public class MaqClientIntegrationTest {
     @Autowired
-    private MaqClientCommons maqClientCommons;
-    @Autowired
     private MaqOmniSerializer maqOmniSerializer;
     @Autowired
     private MaqClient maqClient;
 
     @Test
-    void postSentiment_successful_200() {
+    void postSentiment_failure_400_singleObject() {
+        String bodyJson = "{ \"id\": \"1\", \"text\": \"I love working on ML stuff.\" }";
+
+        HttpContainer<String> httpContainer = maqClient.postSentiment(bodyJson);
+
+        MaqSentimentResponse maqSentimentResponse = maqOmniSerializer.deserializeFromJson(httpContainer);
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(400);
+        assertThat(maqSentimentResponse.getUnderlyingResponse()).isNotNull();
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getMessage()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isEqualTo(List.of(
+                MaqSentimentResponseErrorBodyElement.builder()
+                        .property("data")
+                        .validator("Not applicable")
+                        .value("null")
+                        .message("InvalidJSONError: Not a valid format expected ‘data’ as a key in input json. Please send json in template as such {data : [{id: “numerical id here” , text: “text here” }…….{id: “numerical id here” , text: “text here” }]}")
+                        .build()));
+    }
+
+    @Test
+    void postSentiment_failure_400_singleObjectInDataObject() {
+        String bodyJson = "{ \"data\": " +
+                "{ \"id\": \"1\", \"text\": \"I love working on ML stuff.\" }" +
+                " }";
+
+        HttpContainer<String> httpContainer = maqClient.postSentiment(bodyJson);
+
+        assertThat(httpContainer.getResponse().body())
+                .contains("Cannot deserialize the current JSON object (e.g. {\"name\":\"value\"}) into type 'System.Collections.Generic.List`1[Newtonsoft.Json.Linq.JObject]' because the type requires a JSON array (e.g. [1,2,3])");
+        assertThat(httpContainer.getResponse().statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void postSentiment_successful_200_singleObjectInDataArray() {
+        MaqSentimentRequestBody maqSentimentRequestBody = MaqSentimentRequestBody.builder()
+                .data(List.of(
+                        MaqSentimentRequestBodyDataElement.builder()
+                                .id("1")
+                                .text("I love working on ML stuff.")
+                                .build()))
+                .build();
+
+        MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);
+
+        assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(200);
+        assertThat(maqSentimentResponse.getSuccesses()).isNotNull();
+        assertThat(maqSentimentResponse.getSuccesses()).hasSize(maqSentimentRequestBody.getData().size());
+        IntStream.range(0, maqSentimentResponse.getSuccesses().size()).forEach(i -> {
+            assertThat(maqSentimentResponse.getSuccesses().get(i)).isNotNull();
+            assertThat(maqSentimentResponse.getSuccesses().get(i).getId())
+                    .isEqualTo(maqSentimentRequestBody.getData().get(i).getId());
+            assertThat(maqSentimentResponse.getSuccesses().get(i).getSentiment()).isNotNull();
+        });
+        assertThat(maqSentimentResponse.getErrors()).isNull();
+    }
+
+    @Test
+    void postSentiment_successful_200_multipleObjectsInDataArray() {
         MaqSentimentRequestBody maqSentimentRequestBody = MaqSentimentRequestBody.builder()
                 .data(List.of(
                         MaqSentimentRequestBodyDataElement.builder()
