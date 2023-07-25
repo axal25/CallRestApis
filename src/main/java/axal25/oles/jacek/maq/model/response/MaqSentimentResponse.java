@@ -13,7 +13,9 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 public class MaqSentimentResponse {
-    private List<MaqSentimentResponseSuccessBodyElement> successBody;
-    private MaqSentimentResponseErrorBody errorBody;
+    private Integer statusCode;
+    private String message;
     private HttpResponse<String> underlyingResponse;
+    private List<MaqSentimentResponseSuccessBodyElement> successes;
+    private List<MaqSentimentResponseErrorBodyElement> errors;
 }

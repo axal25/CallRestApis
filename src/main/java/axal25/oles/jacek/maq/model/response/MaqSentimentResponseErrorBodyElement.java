@@ -2,8 +2,6 @@ package axal25.oles.jacek.maq.model.response;
 
 import lombok.*;
 
-import java.util.List;
-
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
@@ -11,8 +9,10 @@ import java.util.List;
 @Setter
 @EqualsAndHashCode
 @ToString
-public class MaqSentimentResponseErrorBody {
-    private Integer statusCode;
+public class MaqSentimentResponseErrorBodyElement {
+    private String property;
+    private Long recordNumber;
+    private String validator;
+    private String value;
     private String message;
-    private List<MaqSentimentResponseErrorBodyErrorsElement> errors;
 }

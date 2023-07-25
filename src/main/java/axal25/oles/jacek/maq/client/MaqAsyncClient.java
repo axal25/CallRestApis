@@ -1,6 +1,7 @@
 package axal25.oles.jacek.maq.client;
 
 import axal25.oles.jacek.http.HttpContainer;
+import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;

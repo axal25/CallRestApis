@@ -1,9 +1,10 @@
 package axal25.oles.jacek.maq.client;
 
+import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBodyDataElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
-import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyErrorsElement;
+import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyElement;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,15 +47,15 @@ public class MaqAsyncClientIntegrationTest {
                 getUnchecked(maqAsyncClient.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(200);
-        assertThat(maqSentimentResponse.getSuccessBody()).isNotNull();
-        assertThat(maqSentimentResponse.getSuccessBody()).hasSize(maqSentimentRequestBody.getData().size());
-        IntStream.range(0, maqSentimentResponse.getSuccessBody().size()).forEach(i -> {
-            assertThat(maqSentimentResponse.getSuccessBody().get(i)).isNotNull();
-            assertThat(maqSentimentResponse.getSuccessBody().get(i).getId())
+        assertThat(maqSentimentResponse.getSuccesses()).isNotNull();
+        assertThat(maqSentimentResponse.getSuccesses()).hasSize(maqSentimentRequestBody.getData().size());
+        IntStream.range(0, maqSentimentResponse.getSuccesses().size()).forEach(i -> {
+            assertThat(maqSentimentResponse.getSuccesses().get(i)).isNotNull();
+            assertThat(maqSentimentResponse.getSuccesses().get(i).getId())
                     .isEqualTo(maqSentimentRequestBody.getData().get(i).getId());
-            assertThat(maqSentimentResponse.getSuccessBody().get(i).getSentiment()).isNotNull();
+            assertThat(maqSentimentResponse.getSuccesses().get(i).getSentiment()).isNotNull();
         });
-        assertThat(maqSentimentResponse.getErrorBody()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isNull();
     }
 
     @Test
@@ -73,14 +74,13 @@ public class MaqAsyncClientIntegrationTest {
                 getUnchecked(maqAsyncClient.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(401);
-        assertThat(maqSentimentResponse.getSuccessBody()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody()).isNotNull();
-        assertThat(maqSentimentResponse.getErrorBody().getStatusCode()).isEqualTo(401);
-        assertThat(maqSentimentResponse.getErrorBody().getMessage())
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(401);
+        assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo("You are passing an invalid API Key. " +
                         "Please valdiate the API Key. For further assistance, get in touch with us here:  " +
                         "https://maqsoftware.com/contact");
-        assertThat(maqSentimentResponse.getErrorBody().getErrors()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isNull();
     }
 
     @Test
@@ -91,11 +91,10 @@ public class MaqAsyncClientIntegrationTest {
                 getUnchecked(maqAsyncClient.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(400);
-        assertThat(maqSentimentResponse.getSuccessBody()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody()).isNotNull();
-        assertThat(maqSentimentResponse.getErrorBody().getStatusCode()).isEqualTo(400);
-        assertThat(maqSentimentResponse.getErrorBody().getMessage()).isEqualTo("Object reference not set to an instance of an object.");
-        assertThat(maqSentimentResponse.getErrorBody().getErrors()).isNull();
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(400);
+        assertThat(maqSentimentResponse.getMessage()).isEqualTo("Object reference not set to an instance of an object.");
+        assertThat(maqSentimentResponse.getErrors()).isNull();
     }
 
     @Test
@@ -112,13 +111,13 @@ public class MaqAsyncClientIntegrationTest {
                 getUnchecked(maqAsyncClient.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse().statusCode()).isEqualTo(400);
-        assertThat(maqSentimentResponse.getSuccessBody()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody()).isNotNull();
-        assertThat(maqSentimentResponse.getErrorBody().getStatusCode()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody().getMessage()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody().getErrors()).isEqualTo(
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isNotNull();
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(400);
+        assertThat(maqSentimentResponse.getMessage()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isEqualTo(
                 maqSentimentRequestBody.getData().stream().map(request ->
-                                MaqSentimentResponseErrorBodyErrorsElement.builder()
+                                MaqSentimentResponseErrorBodyElement.builder()
                                         .property("text")
                                         .recordNumber(Long.valueOf(request.getId()))
                                         .validator("Empty string check")

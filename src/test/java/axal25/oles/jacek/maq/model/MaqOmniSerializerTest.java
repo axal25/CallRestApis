@@ -1,12 +1,11 @@
-package axal25.oles.jacek.maq.client;
+package axal25.oles.jacek.maq.model;
 
 import axal25.oles.jacek.http.HttpContainer;
 import axal25.oles.jacek.http.TestHttpResponse;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBodyDataElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
-import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBody;
-import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyErrorsElement;
+import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponseSuccessBodyElement;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -15,7 +14,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -25,16 +24,17 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSession;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static axal25.oles.jacek.constant.Constants.CONTENT_TYPE;
 import static axal25.oles.jacek.maq.MaqConstants.MAQ_API_KEY_NAME;
-import static axal25.oles.jacek.maq.client.MaqClientCommons.URI_SENTIMENT;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,9 +44,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class MaqOmniSerializerTest {
     private static final String MAQ_KEY_VALUE = "MAQ_KEY_VALUE";
     private static final HttpClient STUB_HTTP_CLIENT = HttpClient.newHttpClient();
+    private static final URI STUB_URI = URI.create("https://www.google.com");
 
     private static final HttpRequest STUB_HTTP_REQUEST = HttpRequest.newBuilder()
-            .uri(URI_SENTIMENT)
+            .uri(STUB_URI)
             .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
             .header(MAQ_API_KEY_NAME, MAQ_KEY_VALUE)
             .POST(HttpRequest.BodyPublishers.ofString("maqSentimentRequestBodyJson"))
@@ -55,7 +56,7 @@ public class MaqOmniSerializerTest {
             .previousHttpResponse(null)
             .sslSession(mock(SSLSession.class))
             .httpClientVersion(HttpClient.Version.HTTP_1_1)
-            .uri(URI_SENTIMENT)
+            .uri(STUB_URI)
             .httpRequest(STUB_HTTP_REQUEST)
             .httpHeaders(HttpHeaders.of(
                     Map.of(
@@ -264,10 +265,8 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(throwableOnly);
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(500)
-                        .message(stubCauseMessage)
-                        .build())
+                .statusCode(500)
+                .message(stubCauseMessage)
                 .build());
     }
 
@@ -287,10 +286,8 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(throwableOnly);
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(500)
-                        .message(stubThrowable.getCause().getMessage())
-                        .build())
+                .statusCode(500)
+                .message(stubThrowable.getCause().getMessage())
                 .build());
     }
 
@@ -308,10 +305,8 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(throwableOnly);
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(500)
-                        .message(stubThrowableEmpty.getClass().getSimpleName())
-                        .build())
+                .statusCode(500)
+                .message(stubThrowableEmpty.getClass().getSimpleName())
                 .build());
     }
 
@@ -343,20 +338,18 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(withResponse);
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
+                .statusCode(httpResponse.statusCode())
+                .message(null)
                 .underlyingResponse(httpResponse)
-                .successBody(null)
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(null)
-                        .message(null)
-                        .errors(List.of(
-                                MaqSentimentResponseErrorBodyErrorsElement.builder()
-                                        .property("text")
-                                        .recordNumber(1L)
-                                        .validator("Empty string check")
-                                        .value("null")
-                                        .message("InvalidJSONError: The ‘text’ passed in json is empty")
-                                        .build()))
-                        .build())
+                .successes(null)
+                .errors(List.of(
+                        MaqSentimentResponseErrorBodyElement.builder()
+                                .property("text")
+                                .recordNumber(1L)
+                                .validator("Empty string check")
+                                .value("null")
+                                .message("InvalidJSONError: The ‘text’ passed in json is empty")
+                                .build()))
                 .build());
     }
 
@@ -379,17 +372,15 @@ public class MaqOmniSerializerTest {
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
                 .underlyingResponse(httpResponse)
-                .successBody(null)
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(400)
-                        .message("Object reference not set to an instance of an object.")
-                        .errors(null)
-                        .build())
+                .successes(null)
+                .statusCode(400)
+                .message("Object reference not set to an instance of an object.")
+                .errors(null)
                 .build());
     }
 
     @Test
-    void deserializeFromJson_withResponse_statusCode400_bodyJsonObjectStatusCodeAndMessage() {
+    void deserializeFromJson_withResponse_statusCode401_bodyJsonObjectStatusCodeAndMessage() {
         HttpResponse<String> httpResponse = STUB_HTTP_RESPONSE.toBuilder()
                 .statusCode(401)
                 .body("{ \"statusCode\": 401, \"message\": \"You are passing an invalid API Key. Please valdiate the API Key. For further assistance, get in touch with us here:  https://maqsoftware.com/contact\" }")
@@ -407,20 +398,18 @@ public class MaqOmniSerializerTest {
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
                 .underlyingResponse(httpResponse)
-                .successBody(null)
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(401)
-                        .message("You are passing an invalid API Key. Please valdiate the API Key. For further assistance, get in touch with us here:  https://maqsoftware.com/contact")
-                        .errors(null)
-                        .build())
+                .successes(null)
+                .statusCode(401)
+                .message("You are passing an invalid API Key. Please valdiate the API Key. For further assistance, get in touch with us here:  https://maqsoftware.com/contact")
+                .errors(null)
                 .build());
     }
 
     @Test
-    void deserializeFromJson_withResponse_statusCode400_bodyJson_objectMapperReadValue_throwsCheckedException() {
+    void deserializeFromJson_withResponse_statusCode401_bodyJson_objectMapperReadValue_throwsCheckedException() {
         HttpResponse<String> httpResponse = STUB_HTTP_RESPONSE.toBuilder()
                 .statusCode(401)
-                .body("{httpResponse_body_value}")
+                .body("{\"httpResponse_body\": \"value\"}")
                 .build();
         HttpContainer<String> withResponse = HttpContainer.<String>builder()
                 .response(null)
@@ -431,8 +420,12 @@ public class MaqOmniSerializerTest {
                 .response(httpResponse)
                 .build();
         TypeFactory typeFactory = objectMapper.getTypeFactory();
+        AtomicReference<JsonNode> bodyJsonNodeRef = new AtomicReference<>();
+        assertDoesNotThrow(() -> bodyJsonNodeRef.set(objectMapper.readTree(httpResponse.body())));
         objectMapper = mock(ObjectMapper.class);
         when(objectMapper.getTypeFactory()).thenReturn(typeFactory);
+        assertDoesNotThrow(() ->
+                when(objectMapper.readTree(anyString())).thenReturn(bodyJsonNodeRef.get()));
         maqOmniSerializer = mock(MaqOmniSerializer.class, withSettings()
                 .useConstructor(objectMapper)
                 .defaultAnswer(CALLS_REAL_METHODS));
@@ -445,7 +438,7 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(withResponse);
 
         String expectedExceptionMessageFormat = "%s during deserialization of "
-                + MaqSentimentResponseErrorBody.class.getSimpleName()
+                + MaqSentimentResponse.class.getSimpleName()
                 + " from "
                 + HttpResponse.class.getSimpleName()
                 + "'s Body:\r\n"
@@ -455,12 +448,10 @@ public class MaqOmniSerializerTest {
                 httpResponse.body());
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
                 .underlyingResponse(httpResponse)
-                .successBody(null)
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(httpResponse.statusCode())
-                        .message(expectedExceptionMessage)
-                        .errors(null)
-                        .build())
+                .successes(null)
+                .statusCode(500)
+                .message(expectedExceptionMessage)
+                .errors(null)
                 .build());
         assertThat(listAppender.list).hasSize(1);
         assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
@@ -506,8 +497,10 @@ public class MaqOmniSerializerTest {
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(withResponse);
 
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
+                .statusCode(withResponse.getResponse().statusCode())
+                .message(null)
                 .underlyingResponse(httpResponse)
-                .successBody(List.of(
+                .successes(List.of(
                         MaqSentimentResponseSuccessBodyElement.builder()
                                 .id("1")
                                 .sentiment(new BigDecimal("0.9533200264"))
@@ -520,7 +513,7 @@ public class MaqOmniSerializerTest {
                                 .id("3")
                                 .sentiment(new BigDecimal("0.9497712851"))
                                 .build()))
-                .errorBody(null)
+                .errors(null)
                 .build());
     }
 
@@ -528,7 +521,7 @@ public class MaqOmniSerializerTest {
     void deserializeFromJson_withResponse_statusCode200_objectMapperReadValue_throwsCheckedException() {
         HttpResponse<String> httpResponse = STUB_HTTP_RESPONSE.toBuilder()
                 .statusCode(200)
-                .body("httpResponse_body_value")
+                .body("[{\"httpResponse_body\": \"value\"}]")
                 .build();
         HttpContainer<String> withResponse = HttpContainer.<String>builder()
                 .response(null)
@@ -539,8 +532,12 @@ public class MaqOmniSerializerTest {
                 .response(httpResponse)
                 .build();
         TypeFactory typeFactory = objectMapper.getTypeFactory();
+        AtomicReference<JsonNode> bodyJsonNodeRef = new AtomicReference<>();
+        assertDoesNotThrow(() -> bodyJsonNodeRef.set(objectMapper.readTree(httpResponse.body())));
         objectMapper = mock(ObjectMapper.class);
         when(objectMapper.getTypeFactory()).thenReturn(typeFactory);
+        assertDoesNotThrow(() ->
+                when(objectMapper.readTree(anyString())).thenReturn(bodyJsonNodeRef.get()));
         maqOmniSerializer = mock(MaqOmniSerializer.class, withSettings()
                 .useConstructor(objectMapper)
                 .defaultAnswer(CALLS_REAL_METHODS));
@@ -548,29 +545,26 @@ public class MaqOmniSerializerTest {
                 .useConstructor("stub exception message")
                 .defaultAnswer(CALLS_REAL_METHODS));
         assertDoesNotThrow(() ->
-                when(objectMapper.readValue(anyString(), any(JavaType.class))).thenThrow(stubException));
+                when(objectMapper.readValue(anyString(), any(Class.class))).thenThrow(stubException));
 
         MaqSentimentResponse actualResponse = maqOmniSerializer.deserializeFromJson(withResponse);
 
         String expectedExceptionMessageFormat = "%s during deserialization of "
-                + List.class.getSimpleName()
-                + "<"
-                + MaqSentimentResponseSuccessBodyElement.class
-                + "> from "
+                + MaqSentimentResponse.class.getSimpleName()
+                + " from "
                 + HttpResponse.class.getSimpleName()
                 + "'s Body:\r\n" +
                 "%s";
+        String httpResponseBody = String.format("{\"successes\": %s}", httpResponse.body());
         String expectedExceptionMessage = String.format(expectedExceptionMessageFormat,
                 stubException.getClass().getSimpleName(),
-                httpResponse.body());
+                httpResponseBody);
         assertThat(actualResponse).isEqualTo(MaqSentimentResponse.builder()
                 .underlyingResponse(httpResponse)
-                .successBody(null)
-                .errorBody(MaqSentimentResponseErrorBody.builder()
-                        .statusCode(500)
-                        .message(expectedExceptionMessage)
-                        .errors(null)
-                        .build())
+                .successes(null)
+                .statusCode(500)
+                .message(expectedExceptionMessage)
+                .errors(null)
                 .build());
         assertThat(listAppender.list).hasSize(1);
         assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
@@ -580,7 +574,7 @@ public class MaqOmniSerializerTest {
                 .isEqualTo(expectedExceptionMessage);
         assertThat(listAppender.list.get(0).getArgumentArray()).isEqualTo(new Object[]{
                 stubException.getClass().getSimpleName(),
-                httpResponse.body()});
+                httpResponseBody});
         assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
         assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }

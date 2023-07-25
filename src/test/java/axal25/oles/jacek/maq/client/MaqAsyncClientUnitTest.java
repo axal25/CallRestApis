@@ -1,5 +1,6 @@
 package axal25.oles.jacek.maq.client;
 
+import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
 import ch.qos.logback.classic.Level;
@@ -76,10 +77,9 @@ public class MaqAsyncClientUnitTest {
                 getUnchecked(maqAsyncClientMock.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse()).isNull();
-        assertThat(maqSentimentResponse.getSuccessBody()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody()).isNotNull();
-        assertThat(maqSentimentResponse.getErrorBody().getStatusCode()).isEqualTo(500);
-        assertThat(maqSentimentResponse.getErrorBody().getErrors()).isNull();
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(500);
+        assertThat(maqSentimentResponse.getErrors()).isNull();
         String expectedExceptionMessageFormat = "%s during "
                 + MaqSentimentRequestBody.class.getSimpleName()
                 + " serialization: %s.";
@@ -87,7 +87,7 @@ public class MaqAsyncClientUnitTest {
                 String.format(expectedExceptionMessageFormat,
                         stubException.getClass().getSimpleName(),
                         maqSentimentRequestBody);
-        assertThat(maqSentimentResponse.getErrorBody().getMessage())
+        assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
         assertThat(listAppender.list).hasSize(1);
         assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
@@ -111,9 +111,9 @@ public class MaqAsyncClientUnitTest {
         MaqSentimentResponse maqSentimentResponse = getUnchecked(maqAsyncClientMock.postSentiment(maqSentimentRequestBody));
 
         assertThat(maqSentimentResponse.getUnderlyingResponse()).isNull();
-        assertThat(maqSentimentResponse.getSuccessBody()).isNull();
-        assertThat(maqSentimentResponse.getErrorBody()).isNotNull();
-        assertThat(maqSentimentResponse.getErrorBody().getStatusCode()).isEqualTo(500);
+        assertThat(maqSentimentResponse.getSuccesses()).isNull();
+        assertThat(maqSentimentResponse.getErrors()).isNull();
+        assertThat(maqSentimentResponse.getStatusCode()).isEqualTo(500);
         HttpRequest expectedHttpRequest = HttpRequest.newBuilder()
                 .uri(URI_SENTIMENT)
                 .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
@@ -132,7 +132,7 @@ public class MaqAsyncClientUnitTest {
                 httpClientMock,
                 expectedHttpRequest,
                 expectedJsonMaqSentimentRequestBodyRef.get());
-        assertThat(maqSentimentResponse.getErrorBody().getMessage())
+        assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
         assertThat(listAppender.list).hasSize(1);
         assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
