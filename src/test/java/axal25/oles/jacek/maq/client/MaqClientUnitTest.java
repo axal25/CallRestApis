@@ -88,17 +88,17 @@ public class MaqClientUnitTest {
                         maqSentimentRequestBody);
         assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.get().list).hasSize(1);
-        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.get().list.get(0).getMessage())
+        assertThat(listAppender.list).hasSize(1);
+        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}"));
-        assertThat(listAppender.get().list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.get().list.get(0).getArgumentArray()).isEqualTo(new Object[]{
+        assertThat(listAppender.list.get(0).getArgumentArray()).isEqualTo(new Object[]{
                 stubException.getClass().getSimpleName(),
                 maqSentimentRequestBody});
-        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 
     @Test
@@ -133,19 +133,19 @@ public class MaqClientUnitTest {
                 expectedJsonMaqSentimentRequestBodyRef.get());
         assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.get().list).hasSize(1);
-        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.get().list.get(0).getMessage())
+        assertThat(listAppender.list).hasSize(1);
+        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}", "{}", "{}"));
-        assertThat(listAppender.get().list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.get().list.get(0).getArgumentArray())
+        assertThat(listAppender.list.get(0).getArgumentArray())
                 .isEqualTo(new Object[]{
                         stubException.getClass().getSimpleName(),
                         httpClientMock,
                         expectedHttpRequest,
                         expectedJsonMaqSentimentRequestBodyRef.get()});
-        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 }

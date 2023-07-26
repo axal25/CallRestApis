@@ -15,7 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -23,10 +27,16 @@ public class ThreadLocalListAppender extends ListAppender<ILoggingEvent> {
     private static final ThreadLocal<ListAppender<ILoggingEvent>> threadLocal = new ThreadLocal<>();
     private static final ThreadLocalListAppender instance = new ThreadLocalListAppender();
     // TODO: proxy
-    public final List<ILoggingEvent> list = new ArrayList<>();
+    public final List<ILoggingEvent> list;
 
     private ThreadLocalListAppender() {
         waitUntilLogBackIsReady();
+        list = (List<ILoggingEvent>) Proxy.newProxyInstance(
+                ThreadLocalListAppender.class.getClassLoader(),
+                new Class[]{List.class},
+                (proxy, method, methodArgs) -> {
+                    return method.invoke(get().list, methodArgs);
+                });
     }
 
     public static Logger getLogger(Class<?> classContaining) {
@@ -100,7 +110,8 @@ public class ThreadLocalListAppender extends ListAppender<ILoggingEvent> {
         }
     }
 
-    public ListAppender<ILoggingEvent> get() {
+    @VisibleForTesting
+    static ListAppender<ILoggingEvent> get() {
         ListAppender<ILoggingEvent> listAppender = threadLocal.get();
 
         if (listAppender == null) {
