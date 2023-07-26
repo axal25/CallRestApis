@@ -18,20 +18,20 @@ public class ThreadLocalListAppenderTest {
 
     @Test
     void getInstance() {
-        assertThat(ThreadLocalListAppender.getInstance()).isNotNull();
+        assertThat(new ThreadLocalListAppender()).isNotNull();
     }
 
     @Test
     void getInstance_list_isInitializedCorrectly() {
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
-        assertThat(threadLocalListAppender.list).isNotNull();
-        assertThat(threadLocalListAppender.list).isEmpty();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
+        assertThat(threadLocalListAppender.listProxy).isNotNull();
+        assertThat(threadLocalListAppender.listProxy).isEmpty();
     }
 
     @Test
     void singleLoggingTestSimulation_with_stopAndDetach_and_start() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef = new AtomicReference<>();
@@ -48,7 +48,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef.set(ThreadLocalListAppender.get());
+                executorListAppenderRef.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -65,7 +65,7 @@ public class ThreadLocalListAppenderTest {
     @Test
     void twoLoggingTestsSimulation_singleThread_without_stopAndDetach_and_start_inBetweenTests() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef1 = new AtomicReference<>();
@@ -83,7 +83,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef1.set(ThreadLocalListAppender.get());
+                executorListAppenderRef1.set(threadLocalListAppender.getListAppenderForCurrentThread());
             });
             executor.execute(() -> {
                 // @Test method()
@@ -94,7 +94,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 4");
-                executorListAppenderRef2.set(ThreadLocalListAppender.get());
+                executorListAppenderRef2.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -113,7 +113,7 @@ public class ThreadLocalListAppenderTest {
     @Test
     void twoLoggingTestsSimulation_separateThreads_without_stopAndDetach_and_start_inBetweenTests() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef1 = new AtomicReference<>();
@@ -131,7 +131,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef1.set(ThreadLocalListAppender.get());
+                executorListAppenderRef1.set(threadLocalListAppender.getListAppenderForCurrentThread());
             });
             executor.execute(() -> {
                 // @Test method()
@@ -142,7 +142,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 4");
-                executorListAppenderRef2.set(ThreadLocalListAppender.get());
+                executorListAppenderRef2.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -160,7 +160,7 @@ public class ThreadLocalListAppenderTest {
     @Test
     void twoLoggingTestsSimulation_separateThreads_without_stopAndDetach_with_start_inBetweenTests() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef1 = new AtomicReference<>();
@@ -178,7 +178,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef1.set(ThreadLocalListAppender.get());
+                executorListAppenderRef1.set(threadLocalListAppender.getListAppenderForCurrentThread());
             });
             executor.execute(() -> {
                 // @BeforeEach setUp()
@@ -191,7 +191,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 4");
-                executorListAppenderRef2.set(ThreadLocalListAppender.get());
+                executorListAppenderRef2.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -214,7 +214,7 @@ public class ThreadLocalListAppenderTest {
     @Test
     void twoLoggingTestsSimulation_singleThread_with_stopAndDetach_and_start_inBetweenTests() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef1 = new AtomicReference<>();
@@ -232,7 +232,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef1.set(ThreadLocalListAppender.get());
+                executorListAppenderRef1.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -247,7 +247,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 4");
-                executorListAppenderRef2.set(ThreadLocalListAppender.get());
+                executorListAppenderRef2.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -270,7 +270,7 @@ public class ThreadLocalListAppenderTest {
     @Test
     void twoLoggingTestsSimulation_separateThreads_with_stopAndDetach_and_start_inBetweenTests() {
         // @BeforeAll beforeAll()
-        ThreadLocalListAppender threadLocalListAppender = ThreadLocalListAppender.getInstance();
+        ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
         Logger logger = ThreadLocalListAppender.getLogger(this.getClass());
 
         AtomicReference<ListAppender<ILoggingEvent>> executorListAppenderRef1 = new AtomicReference<>();
@@ -288,7 +288,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 2");
-                executorListAppenderRef1.set(ThreadLocalListAppender.get());
+                executorListAppenderRef1.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
@@ -303,7 +303,7 @@ public class ThreadLocalListAppenderTest {
                     throw new RuntimeException(e);
                 }
                 logger.error("message 4");
-                executorListAppenderRef2.set(ThreadLocalListAppender.get());
+                executorListAppenderRef2.set(threadLocalListAppender.getListAppenderForCurrentThread());
                 // @AfterEach tearDown()
                 threadLocalListAppender.stopAndDetach(logger);
             });
