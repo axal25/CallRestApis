@@ -7,20 +7,17 @@ import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBodyDataElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponseErrorBodyElement;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponseSuccessBodyElement;
+import axal25.oles.jacek.util.ThreadLocalListAppender;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
-import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSession;
 import java.math.BigDecimal;
@@ -41,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-public class MaqOmniSerializerTest {
+public class MaqOmniSerializerUnitTest {
     private static final String MAQ_KEY_VALUE = "MAQ_KEY_VALUE";
     private static final HttpClient STUB_HTTP_CLIENT = HttpClient.newHttpClient();
     private static final URI STUB_URI = URI.create("https://www.google.com");
@@ -67,28 +64,31 @@ public class MaqOmniSerializerTest {
                             "request-context", List.of("appId=cid-v1:65946bdd-f7c2-41e1-848f-b5118188d656")),
                     (k, v) -> true))
             .build();
-    private final Logger logger = (Logger) LoggerFactory.getLogger(MaqOmniSerializer.class);
-    private final ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+    private static ThreadLocalListAppender listAppender;
+    private static Logger logger;
     private ObjectMapper objectMapper;
     private MaqOmniSerializer maqOmniSerializer;
 
+    @BeforeAll
+    static void beforeAll() {
+        listAppender = ThreadLocalListAppender.getInstance();
+        logger = ThreadLocalListAppender.getLogger(MaqOmniSerializer.class);
+    }
+
     @BeforeEach
     void setUp() {
-        logger.addAppender(listAppender);
-        logger.setLevel(Level.ALL);
-        listAppender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
-        listAppender.start();
         objectMapper = mock(ObjectMapper.class, withSettings()
                 .useConstructor()
                 .defaultAnswer(CALLS_REAL_METHODS));
         maqOmniSerializer = mock(MaqOmniSerializer.class, withSettings()
                 .useConstructor(objectMapper)
                 .defaultAnswer(CALLS_REAL_METHODS));
+        listAppender.setSafelyContextLevelAttachAndStart(logger, Level.ALL);
     }
 
     @AfterEach
     void tearDown() {
-        logger.detachAndStopAllAppenders();
+        listAppender.stopAndDetach(logger);
     }
 
     @Test
@@ -419,11 +419,9 @@ public class MaqOmniSerializerTest {
                 .request(STUB_HTTP_REQUEST)
                 .response(httpResponse)
                 .build();
-        TypeFactory typeFactory = objectMapper.getTypeFactory();
         AtomicReference<JsonNode> bodyJsonNodeRef = new AtomicReference<>();
         assertDoesNotThrow(() -> bodyJsonNodeRef.set(objectMapper.readTree(httpResponse.body())));
         objectMapper = mock(ObjectMapper.class);
-        when(objectMapper.getTypeFactory()).thenReturn(typeFactory);
         assertDoesNotThrow(() ->
                 when(objectMapper.readTree(anyString())).thenReturn(bodyJsonNodeRef.get()));
         maqOmniSerializer = mock(MaqOmniSerializer.class, withSettings()
@@ -453,17 +451,17 @@ public class MaqOmniSerializerTest {
                 .message(expectedExceptionMessage)
                 .errors(null)
                 .build());
-        assertThat(listAppender.list).hasSize(1);
-        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.list.get(0).getMessage())
+        assertThat(listAppender.get().list).hasSize(1);
+        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.get().list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}"));
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.get().list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list.get(0).getArgumentArray()).isEqualTo(new Object[]{
+        assertThat(listAppender.get().list.get(0).getArgumentArray()).isEqualTo(new Object[]{
                 stubException.getClass().getSimpleName(),
                 httpResponse.body()});
-        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 
     @Test
@@ -531,11 +529,9 @@ public class MaqOmniSerializerTest {
                 .request(STUB_HTTP_REQUEST)
                 .response(httpResponse)
                 .build();
-        TypeFactory typeFactory = objectMapper.getTypeFactory();
         AtomicReference<JsonNode> bodyJsonNodeRef = new AtomicReference<>();
         assertDoesNotThrow(() -> bodyJsonNodeRef.set(objectMapper.readTree(httpResponse.body())));
         objectMapper = mock(ObjectMapper.class);
-        when(objectMapper.getTypeFactory()).thenReturn(typeFactory);
         assertDoesNotThrow(() ->
                 when(objectMapper.readTree(anyString())).thenReturn(bodyJsonNodeRef.get()));
         maqOmniSerializer = mock(MaqOmniSerializer.class, withSettings()
@@ -566,16 +562,16 @@ public class MaqOmniSerializerTest {
                 .message(expectedExceptionMessage)
                 .errors(null)
                 .build());
-        assertThat(listAppender.list).hasSize(1);
-        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.list.get(0).getMessage())
+        assertThat(listAppender.get().list).hasSize(1);
+        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.get().list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}"));
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.get().list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list.get(0).getArgumentArray()).isEqualTo(new Object[]{
+        assertThat(listAppender.get().list.get(0).getArgumentArray()).isEqualTo(new Object[]{
                 stubException.getClass().getSimpleName(),
                 httpResponseBody});
-        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 }

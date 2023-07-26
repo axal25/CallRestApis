@@ -3,18 +3,16 @@ package axal25.oles.jacek.maq.client;
 import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
+import axal25.oles.jacek.util.ThreadLocalListAppender;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
-import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,21 +27,23 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 public class MaqClientUnitTest {
+    private static ThreadLocalListAppender listAppender;
+    private static Logger logger;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String maqKeyValueStub = "STUB_MAQ_KEY_VALUE";
-    private final Logger logger = (Logger) LoggerFactory.getLogger(MaqClientCommons.class);
-    private final ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
     private MaqClientCommons maqClientCommonsMock;
     private MaqOmniSerializer maqOmniSerializerMock;
     private MaqClient maqClientMock;
     private HttpClient httpClientMock;
 
+    @BeforeAll
+    static void beforeAll() {
+        listAppender = ThreadLocalListAppender.getInstance();
+        logger = ThreadLocalListAppender.getLogger(MaqClientCommons.class);
+    }
+
     @BeforeEach
     void setUp() {
-        logger.addAppender(listAppender);
-        logger.setLevel(Level.ALL);
-        listAppender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
-        listAppender.start();
         httpClientMock = mock(HttpClient.class);
         maqClientCommonsMock = mock(MaqClientCommons.class, withSettings()
                 .useConstructor(maqKeyValueStub)
@@ -55,11 +55,12 @@ public class MaqClientUnitTest {
         maqClientMock = mock(MaqClient.class, withSettings()
                 .useConstructor(maqClientCommonsMock, maqOmniSerializerMock)
                 .defaultAnswer(CALLS_REAL_METHODS));
+        listAppender.setSafelyContextLevelAttachAndStart(logger, Level.ALL);
     }
 
     @AfterEach
     void tearDown() {
-        logger.detachAndStopAllAppenders();
+        listAppender.stopAndDetach(logger);
     }
 
     @Test
@@ -87,17 +88,17 @@ public class MaqClientUnitTest {
                         maqSentimentRequestBody);
         assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list).hasSize(1);
-        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.list.get(0).getMessage())
+        assertThat(listAppender.get().list).hasSize(1);
+        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.get().list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}"));
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.get().list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list.get(0).getArgumentArray()).isEqualTo(new Object[]{
+        assertThat(listAppender.get().list.get(0).getArgumentArray()).isEqualTo(new Object[]{
                 stubException.getClass().getSimpleName(),
                 maqSentimentRequestBody});
-        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 
     @Test
@@ -132,19 +133,19 @@ public class MaqClientUnitTest {
                 expectedJsonMaqSentimentRequestBodyRef.get());
         assertThat(maqSentimentResponse.getMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list).hasSize(1);
-        assertThat(listAppender.list.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(listAppender.list.get(0).getMessage())
+        assertThat(listAppender.get().list).hasSize(1);
+        assertThat(listAppender.get().list.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(listAppender.get().list.get(0).getMessage())
                 .isEqualTo(String.format(expectedExceptionMessageFormat, "{}", "{}", "{}", "{}"));
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.get().list.get(0).getFormattedMessage())
                 .isEqualTo(expectedExceptionMessage);
-        assertThat(listAppender.list.get(0).getArgumentArray())
+        assertThat(listAppender.get().list.get(0).getArgumentArray())
                 .isEqualTo(new Object[]{
                         stubException.getClass().getSimpleName(),
                         httpClientMock,
                         expectedHttpRequest,
                         expectedJsonMaqSentimentRequestBodyRef.get()});
-        assertThat(((ThrowableProxy) listAppender.list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
-        assertThat(listAppender.list.get(0).getMarker().getName()).isEqualTo("checked exception");
+        assertThat(((ThrowableProxy) listAppender.get().list.get(0).getThrowableProxy()).getThrowable()).isEqualTo(stubException);
+        assertThat(listAppender.get().list.get(0).getMarker().getName()).isEqualTo("checked exception");
     }
 }
