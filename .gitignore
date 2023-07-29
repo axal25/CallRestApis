@@ -4,6 +4,8 @@ target/
 !**/src/test/**/target/
 
 secrets/**
+!secrets/template.env
+!secrets/maq_api_key_get_free_trial.png
 
 ### IntelliJ IDEA ###
 .idea
