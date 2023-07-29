@@ -3,6 +3,7 @@ package axal25.oles.jacek.maq.client;
 import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
+import axal25.oles.jacek.util.CurrentThreadExecutor;
 import axal25.oles.jacek.util.ThreadLocalListAppender;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static axal25.oles.jacek.constant.Constants.CONTENT_TYPE;
@@ -31,6 +33,7 @@ public class MaqClientUnitTest {
     private static Logger logger;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String maqKeyValueStub = "STUB_MAQ_KEY_VALUE";
+    private Executor executor;
     private MaqClientCommons maqClientCommonsMock;
     private MaqOmniSerializer maqOmniSerializerMock;
     private MaqClient maqClientMock;
@@ -44,10 +47,11 @@ public class MaqClientUnitTest {
 
     @BeforeEach
     void setUp() {
-        httpClientMock = mock(HttpClient.class);
+        executor = new CurrentThreadExecutor();
         maqClientCommonsMock = mock(MaqClientCommons.class, withSettings()
-                .useConstructor(maqKeyValueStub)
+                .useConstructor(maqKeyValueStub, executor)
                 .defaultAnswer(CALLS_REAL_METHODS));
+        httpClientMock = mock(HttpClient.class);
         when(maqClientCommonsMock.getHttpClient()).thenReturn(httpClientMock);
         maqOmniSerializerMock = mock(MaqOmniSerializer.class, withSettings()
                 .useConstructor(objectMapper)

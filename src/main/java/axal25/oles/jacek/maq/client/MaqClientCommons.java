@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.util.concurrent.Executor;
 
 import static axal25.oles.jacek.constant.Constants.CONTENT_TYPE;
 import static axal25.oles.jacek.maq.MaqConstants.Endpoints.SENTIMENT;
@@ -25,10 +26,13 @@ public class MaqClientCommons {
     static final URI URI_SENTIMENT = URI.create(SENTIMENT);
     private static final Logger logger = LoggerFactory.getLogger(MaqClientCommons.class);
     private final String maqKeyValue;
+    private final Executor executor;
 
     @Autowired
-    public MaqClientCommons(@Value("${secrets.maq_api_key_value}") String maqKeyValue) {
+    MaqClientCommons(@Value("${secrets.maq_api_key_value}") String maqKeyValue,
+                     Executor executor) {
         this.maqKeyValue = maqKeyValue;
+        this.executor = executor;
     }
 
     public HttpContainer.HttpContainerBuilder<String> getContainerBuilder(
@@ -45,7 +49,9 @@ public class MaqClientCommons {
 
     @VisibleForTesting
     HttpClient getHttpClient() {
-        return HttpClient.newHttpClient();
+        return HttpClient.newBuilder()
+                .executor(executor)
+                .build();
     }
 
     public HttpContainer<String> getHttpContainerFailedSerialization(

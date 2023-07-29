@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static axal25.oles.jacek.constant.Constants.CONTENT_TYPE;
@@ -34,6 +35,7 @@ public class MaqAsyncClientUnitTest {
     private static Logger logger;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String maqKeyValueStub = "STUB_MAQ_KEY_VALUE";
+    private Executor executor;
     private MaqClientCommons maqClientCommonsMock;
     private MaqOmniSerializer maqOmniSerializerMock;
     private MaqAsyncClient maqAsyncClientMock;
@@ -47,10 +49,11 @@ public class MaqAsyncClientUnitTest {
 
     @BeforeEach
     void setUp() {
-        httpClientMock = mock(HttpClient.class);
+        executor = new CurrentThreadExecutor();
         maqClientCommonsMock = mock(MaqClientCommons.class, withSettings()
-                .useConstructor(maqKeyValueStub)
+                .useConstructor(maqKeyValueStub, executor)
                 .defaultAnswer(CALLS_REAL_METHODS));
+        httpClientMock = mock(HttpClient.class);
         when(maqClientCommonsMock.getHttpClient()).thenReturn(httpClientMock);
         maqOmniSerializerMock = mock(MaqOmniSerializer.class, withSettings()
                 .useConstructor(objectMapper)

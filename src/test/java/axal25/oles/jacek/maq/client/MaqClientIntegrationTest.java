@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -18,6 +19,8 @@ import static java.util.stream.Collectors.toList;
 
 @SpringBootTest
 public class MaqClientIntegrationTest {
+    @Autowired
+    private Executor executor;
     @Autowired
     private MaqOmniSerializer maqOmniSerializer;
     @Autowired
@@ -121,7 +124,7 @@ public class MaqClientIntegrationTest {
                                 .text("test")
                                 .build()))
                 .build();
-        MaqClientCommons maqClientCommons = new MaqClientCommons("bad maq api key value");
+        MaqClientCommons maqClientCommons = new MaqClientCommons("bad maq api key value", executor);
         MaqClient maqClient = new MaqClient(maqClientCommons, maqOmniSerializer);
 
         MaqSentimentResponse maqSentimentResponse = maqClient.postSentiment(maqSentimentRequestBody);

@@ -4,8 +4,6 @@ import axal25.oles.jacek.http.HttpContainer;
 import axal25.oles.jacek.maq.model.MaqOmniSerializer;
 import axal25.oles.jacek.maq.model.request.MaqSentimentRequestBody;
 import axal25.oles.jacek.maq.model.response.MaqSentimentResponse;
-import axal25.oles.jacek.util.CompletableFutureUtil;
-import axal25.oles.jacek.util.VisibleForTesting;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,15 +20,6 @@ public class MaqAsyncClient {
     private final Executor executor;
 
     @Autowired
-    public MaqAsyncClient(
-            MaqClientCommons maqClientCommons,
-            MaqOmniSerializer maqOmniSerializer) {
-        this.maqClientCommons = maqClientCommons;
-        this.maqOmniSerializer = maqOmniSerializer;
-        this.executor = CompletableFutureUtil.getDefaultExecutor();
-    }
-
-    @VisibleForTesting
     MaqAsyncClient(
             MaqClientCommons maqClientCommons,
             MaqOmniSerializer maqOmniSerializer,
