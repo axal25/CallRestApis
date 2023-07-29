@@ -23,6 +23,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Component
 public class MaqClientCommons {
     @VisibleForTesting
+    static final HttpClient.Version httpClientVersion = HttpClient.Version.HTTP_2;
+    @VisibleForTesting
     static final URI URI_SENTIMENT = URI.create(SENTIMENT);
     private static final Logger logger = LoggerFactory.getLogger(MaqClientCommons.class);
     private final String maqKeyValue;
@@ -43,6 +45,7 @@ public class MaqClientCommons {
                         .uri(URI_SENTIMENT)
                         .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                         .header(MAQ_API_KEY_NAME, maqKeyValue)
+                        .version(httpClientVersion)
                         .POST(HttpRequest.BodyPublishers.ofString(maqSentimentRequestBodyJson))
                         .build());
     }

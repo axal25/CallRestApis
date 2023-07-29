@@ -52,7 +52,7 @@ public class MaqOmniSerializerUnitTest {
     private static final TestHttpResponse<String> STUB_HTTP_RESPONSE = TestHttpResponse.<String>builder()
             .previousHttpResponse(null)
             .sslSession(mock(SSLSession.class))
-            .httpClientVersion(HttpClient.Version.HTTP_1_1)
+            .httpClientVersion(HttpClient.Version.HTTP_2)
             .uri(STUB_URI)
             .httpRequest(STUB_HTTP_REQUEST)
             .httpHeaders(HttpHeaders.of(
