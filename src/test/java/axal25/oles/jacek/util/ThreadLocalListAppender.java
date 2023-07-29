@@ -16,7 +16,8 @@ import java.util.stream.StreamSupport;
 
 public class ThreadLocalListAppender {
     private final ThreadLocal<ListAppender<ILoggingEvent>> threadLocal = new ThreadLocal<>();
-    public final List<ILoggingEvent> listProxy = (List<ILoggingEvent>) Proxy.newProxyInstance(
+    // simulates ListAppender's public List<E> list field using proxy.
+    public final List<ILoggingEvent> list = (List<ILoggingEvent>) Proxy.newProxyInstance(
             ThreadLocalListAppender.class.getClassLoader(),
             new Class[]{List.class},
             (proxy, method, args) ->

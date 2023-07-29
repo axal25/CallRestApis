@@ -24,8 +24,8 @@ public class ThreadLocalListAppenderTest {
     @Test
     void getInstance_list_isInitializedCorrectly() {
         ThreadLocalListAppender threadLocalListAppender = new ThreadLocalListAppender();
-        assertThat(threadLocalListAppender.listProxy).isNotNull();
-        assertThat(threadLocalListAppender.listProxy).isEmpty();
+        assertThat(threadLocalListAppender.list).isNotNull();
+        assertThat(threadLocalListAppender.list).isEmpty();
     }
 
     @Test
